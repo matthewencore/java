@@ -2,7 +2,6 @@ package org.example.OOP;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
 import java.util.Scanner;
 
 // ПеречислениеДляШахмат
@@ -130,12 +129,118 @@ class ChessBoard {
         return pos >= 0 && pos <= 7;
     }
 
-    void castling0(){
-        //Определяем
-
+    // Метод для получения короля определенного цвета
+    public King getKing(String color) {
+        for (ChessPiece[] row : board) {
+            for (ChessPiece piece : row) {
+                if (piece != null && piece instanceof King && piece.getColor().equals(color)) {
+                    return (King) piece;
+                }
+            }
+        }
+        return null;  // Если король не найден
     }
-    void castling7() {
 
+    // Метод для рокировки белого короля с ладьей на 0-й линии
+    public boolean castling0() {
+        // Проверка, что это ход белого игрока
+        if (!nowPlayer.equals("White")) {
+            return false;
+        }
+
+        // Проверка, что король и ладья находятся на своих начальных позициях
+        if (board[0][0] == null || board[0][4] == null) {
+            return false;
+        }
+
+        ChessPiece king = board[0][4];
+        ChessPiece rook = board[0][0];
+
+        // Проверка, что король и ладья того же цвета и не двигались (check == true)
+        if (!king.getColor().equals("White") || !rook.getColor().equals("White")) {
+            return false;
+        }
+        if (!king.check || !rook.check) {
+            return false;
+        }
+
+        // Проверка, что клетки между королем и ладьей пустые
+        if (board[0][1] != null || board[0][2] != null || board[0][3] != null) {
+            return false;
+        }
+
+        // Получаем короля и проверяем, не находится ли он под атакой
+        King whiteKing = getKing("White");
+        if (whiteKing != null && (whiteKing.isUnderAttack(this, 0, 4) || whiteKing.isUnderAttack(this, 0, 2))) {
+            return false;
+        }
+
+        // Выполнение рокировки
+        // Перемещаем короля
+        board[0][2] = king;
+        board[0][4] = null;
+        king.check = false;
+
+        // Перемещаем ладью
+        board[0][3] = rook;
+        board[0][0] = null;
+        rook.check = false;
+
+        // Меняем игрока
+        nowPlayer = "Black";
+
+        return true;
+    }
+
+    // Метод для рокировки черного короля с ладьей на 7-й линии
+    public boolean castling7() {
+        // Проверка, что это ход черного игрока
+        if (!nowPlayer.equals("Black")) {
+            return false;
+        }
+
+        // Проверка, что король и ладья находятся на своих начальных позициях
+        if (board[7][0] == null || board[7][4] == null) {
+            return false;
+        }
+
+        ChessPiece king = board[7][4];
+        ChessPiece rook = board[7][0];
+
+        // Проверка, что король и ладья того же цвета и не двигались (check == true)
+        if (!king.getColor().equals("Black") || !rook.getColor().equals("Black")) {
+            return false;
+        }
+        if (!king.check || !rook.check) {
+            return false;
+        }
+
+        // Проверка, что клетки между королем и ладьей пустые
+        if (board[7][1] != null || board[7][2] != null || board[7][3] != null) {
+            return false;
+        }
+
+        // Получаем короля и проверяем, не находится ли он под атакой
+        King blackKing = getKing("Black");
+        if (blackKing != null && (blackKing.isUnderAttack(this, 7, 4) || blackKing.isUnderAttack(this, 7, 2))) {
+            return false;
+        }
+
+        // Выполнение рокировки
+        // Перемещаем короля
+        board[7][2] = king;
+        board[7][4] = null;
+        king.check = false;
+
+        // Перемещаем ладью
+        board[7][3] = rook;
+        board[7][0] = null;
+        rook.check = false;
+
+        // Меняем игрока
+        nowPlayer = "White";
+
+        return true;
     }
 }
 
@@ -241,7 +346,15 @@ class Horse extends ChessPiece{
         // Проверка на корректный ход пользователя
         for (PointChess item : pointChesses) {
             if (item.equalsPoint(toLine,toColumn)) {
-                return true;
+                if (cb.board[toLine][toColumn] != null){
+                    if (cb.board[toLine][toColumn].color.equalsIgnoreCase(getColor())) {
+                        return false;
+                    } else {
+                       return true;
+                    }
+                } else {
+                  return true;
+                }
             }
         }
         return false;
@@ -264,17 +377,17 @@ class Pawn extends ChessPiece {
         return super.getColor();
     }
 
+
     @Override
     boolean canMoveToPosition(ChessBoard cb, int line, int column, int toLine, int toColumn) {
         if (!PointChess.isValid(line,column)) {
             System.err.println("Пешка | Возникла ошибка, позиция фигуры вышла за границы 8х8");
             return false;
         }
-        System.out.println(getColor());
+        //System.out.println(getColor());
 
         // Реализация пешки черного цвета
         if (getColor().equalsIgnoreCase(ChessColor.BLACK.getChoice())) {
-            System.out.println("Блок белой пешки");
             // Определение начальных позиций пешек и возможность ходить на две клетки.
             List<PointChess> defaultPositionWhite = new ArrayList<>();
             defaultPositionWhite.add(new PointChess(6,0));
@@ -289,6 +402,14 @@ class Pawn extends ChessPiece {
             for (PointChess item: defaultPositionWhite) {
                 // Если пешка на начальной позиции
                 if (item.equalsPoint(line,column)) {
+
+                    //Проверка на стоящую впереди пешку, фигуру
+                    if (cb.board[line - 1][column] != null){
+                        return false;
+                    } else if (cb.board[line - 2][column] != null) {
+                        return false;
+                    }
+
                     List<PointChess> maybeIndexWhite = new ArrayList<>();
                     maybeIndexWhite.add(new PointChess(line - 1, column));
                     maybeIndexWhite.add(new PointChess(line - 2, column));
@@ -300,6 +421,12 @@ class Pawn extends ChessPiece {
 
                     }
                 } else {
+
+                    //Проверка на стоящую впереди пешку, фигуру
+                    if (cb.board[line - 1][column] != null){
+                        return false;
+                    }
+
                     List<PointChess> maybeIndexWhite = new ArrayList<>();
                     maybeIndexWhite.add(new PointChess(line - 1, column));
 
@@ -314,7 +441,6 @@ class Pawn extends ChessPiece {
         }
         // Реализация пешки белого цвета
         if (getColor().equalsIgnoreCase(ChessColor.WHITE.getChoice())) {
-            System.out.println("Блок черной пешки");
             // Определение начальных позиций пешек и возможность ходить на две клетки.
             List<PointChess> defaultPositionBlack = new ArrayList<>();
             defaultPositionBlack.add(new PointChess(1,0));
@@ -329,9 +455,18 @@ class Pawn extends ChessPiece {
             for (PointChess item: defaultPositionBlack) {
                 // Если пешка на начальной позиции
                 if (item.equalsPoint(line,column)) {
+
+                    //Проверка на стоящую впереди пешку, фигуру
+                    if (cb.board[line + 1][column] != null){
+                        return false;
+                    } else if (cb.board[line + 2][column] != null) {
+                        return false;
+                    }
+
                     List<PointChess> maybeIndexWhite = new ArrayList<>();
                     maybeIndexWhite.add(new PointChess(line + 1, column));
                     maybeIndexWhite.add(new PointChess(line + 2, column));
+
 
                     for (PointChess item2 : maybeIndexWhite) {
                         if (item2.equalsPoint(toLine,toColumn)) {
@@ -340,6 +475,11 @@ class Pawn extends ChessPiece {
 
                     }
                 } else {
+                    //Проверка на стоящую впереди пешку, фигуру
+                    if (cb.board[line + 1][column] != null){
+                        return false;
+                    }
+
                     List<PointChess> maybeIndexWhite = new ArrayList<>();
                     maybeIndexWhite.add(new PointChess(line + 1, column));
 
@@ -369,7 +509,7 @@ class Bishop extends ChessPiece {
 
     @Override
     boolean canMoveToPosition(ChessBoard cb, int line, int column, int toLine, int toColumn) {
-        if (!PointChess.isValid(line,column)) {
+        if (!PointChess.isValid(line, column)) {
             System.err.println("Слон | Возникла ошибка, позиция фигуры вышла за границы 8х8");
             return false;
         }
@@ -378,68 +518,91 @@ class Bishop extends ChessPiece {
         // ПравоВверх
         int x = line;
         int y = column;
-
         while (true) {
             x -= 1;
             y -= 1;
-            if (!(x >= 0 && x <= 7) || !(y >= 0 && y <= 7)){
-                break;
-            } else {
-                maybePosBishop.add(new PointChess(x,y));
+            if (!(x >= 0 && x <= 7) || !(y >= 0 && y <= 7)) {
+                break;  // Выход из цикла, если мы за пределами доски
             }
+            if (cb.board[x][y] != null) {
+                if (cb.board[x][y].color.equalsIgnoreCase(getColor())) {
+                    break;  // Если фигура того же цвета, выходим
+                } else {
+                    maybePosBishop.add(new PointChess(x, y));
+                    break;  // Если фигура противника, добавляем и выходим
+                }
+            }
+            maybePosBishop.add(new PointChess(x, y));  // Если клетка пуста, добавляем
         }
 
         // ПравоНиз
         int x2 = line;
         int y2 = column;
-
         while (true) {
             x2 += 1;
             y2 -= 1;
-            if (!(x2 >= 0 && x2 <= 7) || !(y2 >= 0 && y2 <= 7)){
-                break;
-            } else {
-                maybePosBishop.add(new PointChess(x2,y2));
+            if (!(x2 >= 0 && x2 <= 7) || !(y2 >= 0 && y2 <= 7)) {
+                break;  // Выход из цикла, если мы за пределами доски
             }
+            if (cb.board[x2][y2] != null) {
+                if (cb.board[x2][y2].color.equalsIgnoreCase(getColor())) {
+                    break;  // Если фигура того же цвета, выходим
+                } else {
+                    maybePosBishop.add(new PointChess(x2, y2));
+                    break;  // Если фигура противника, добавляем и выходим
+                }
+            }
+            maybePosBishop.add(new PointChess(x2, y2));  // Если клетка пуста, добавляем
         }
 
         // ЛевоВверх
         int x3 = line;
         int y3 = column;
-
         while (true) {
             x3 -= 1;
             y3 += 1;
-            if (!(x3 >= 0 && x3 <= 7) || !(y3 >= 0 && y3 <= 7)){
-                break;
-            } else {
-                maybePosBishop.add(new PointChess(x3, y3));
+            if (!(x3 >= 0 && x3 <= 7) || !(y3 >= 0 && y3 <= 7)) {
+                break;  // Выход из цикла, если мы за пределами доски
             }
+            if (cb.board[x3][y3] != null) {
+                if (cb.board[x3][y3].color.equalsIgnoreCase(getColor())) {
+                    break;  // Если фигура того же цвета, выходим
+                } else {
+                    maybePosBishop.add(new PointChess(x3, y3));
+                    break;  // Если фигура противника, добавляем и выходим
+                }
+            }
+            maybePosBishop.add(new PointChess(x3, y3));  // Если клетка пуста, добавляем
         }
 
         // ЛевоНиз
         int x4 = line;
         int y4 = column;
-
         while (true) {
             x4 += 1;
             y4 += 1;
-            if (!(x4 >= 0 && x4 <= 7) || !(y4 >= 0 && y4 <= 7)){
-                break;
-            } else {
-                maybePosBishop.add(new PointChess(x4, y4));
+            if (!(x4 >= 0 && x4 <= 7) || !(y4 >= 0 && y4 <= 7)) {
+                break;  // Выход из цикла, если мы за пределами доски
             }
+            if (cb.board[x4][y4] != null) {
+                if (cb.board[x4][y4].color.equalsIgnoreCase(getColor())) {
+                    break;  // Если фигура того же цвета, выходим
+                } else {
+                    maybePosBishop.add(new PointChess(x4, y4));
+                    break;  // Если фигура противника, добавляем и выходим
+                }
+            }
+            maybePosBishop.add(new PointChess(x4, y4));  // Если клетка пуста, добавляем
         }
 
-        for (PointChess item: maybePosBishop) {
-            if (item.equalsPoint(toLine,toColumn)) {
+        // Проверяем, можно ли ходить на заданную позицию
+        for (PointChess item : maybePosBishop) {
+            if (item.equalsPoint(toLine, toColumn)) {
                 return true;
             }
         }
-//        System.err.println("Слон | Ходить на заданную позицию фигура не может.\n     | Список позиций ниже");
-//        for (PointChess item: maybePosBishop) {
-//            System.err.println(item.getX() + " " + item.getY());
-//        }
+
+        // Если не нашли подходящей позиции
         return false;
     }
 
@@ -470,12 +633,19 @@ class Rook extends ChessPiece{
         int y = column;
 
         while(true){
-            y -= 1;
-            if (!(x >= 0 && x <= 7) || !(y >= 0 && y <= 7)){
+            y += 1;
+            if (!(x >= 0 && x <= 7) || !(y >= 0 && y <= 7)) {
                 break;
-            } else {
-                maybePosRook.add(new PointChess(x,y));
             }
+            if (cb.board[x][y] != null) {
+                if (cb.board[x][y].color.equalsIgnoreCase(getColor())){
+                    break;
+                } else {
+                    maybePosRook.add(new PointChess(x,y));
+                    break;
+                }
+            }
+            maybePosRook.add(new PointChess(x,y));
         }
 
         // Лево
@@ -483,12 +653,20 @@ class Rook extends ChessPiece{
         int y2 = column;
 
         while(true){
-            y2 += 1;
+            y2 -= 1;
             if (!(x2 >= 0 && x2 <= 7) || !(y2 >= 0 && y2 <= 7)){
                 break;
-            } else {
-                maybePosRook.add(new PointChess(x2,y2));
             }
+            if (cb.board[x2][y2] != null) {
+                if (cb.board[x2][y2].color.equalsIgnoreCase(getColor())){
+                    break;
+                } else {
+                    maybePosRook.add(new PointChess(x2,y2));
+                    break;
+                }
+            }
+
+            maybePosRook.add(new PointChess(x2,y2));
         }
 
         // Вверх
@@ -496,12 +674,21 @@ class Rook extends ChessPiece{
         int y3 = column;
 
         while(true){
-            x3 -= 1;
+            x3 += 1;
             if (!(x3 >= 0 && x3 <= 7) || !(y3 >= 0 && y3 <= 7)){
                 break;
-            } else {
-                maybePosRook.add(new PointChess(x3,y3));
             }
+
+            if (cb.board[x3][y3] != null) {
+                if (cb.board[x3][y3].color.equalsIgnoreCase(getColor())){
+                    break;
+                } else {
+                    maybePosRook.add(new PointChess(x3,y3));
+                    break;
+                }
+            }
+
+            maybePosRook.add(new PointChess(x3,y3));
         }
 
         // Вниз
@@ -509,12 +696,20 @@ class Rook extends ChessPiece{
         int y4 = column;
 
         while(true){
-            x4 += 1;
+            x4 -= 1;
             if (!(x4 >= 0 && x4 <= 7) || !(y4 >= 0 && y4 <= 7)){
                 break;
-            } else {
-                maybePosRook.add(new PointChess(x4, y4));
             }
+
+            if (cb.board[x4][y4] != null) {
+                if (cb.board[x4][y4].color.equalsIgnoreCase(getColor())){
+                    break;
+                } else {
+                    maybePosRook.add(new PointChess(x4,y4));
+                    break;
+                }
+            }
+            maybePosRook.add(new PointChess(x4, y4));
         }
 
         for (PointChess item: maybePosRook) {
@@ -539,129 +734,57 @@ class Queen extends ChessPiece{
 
     @Override
     boolean canMoveToPosition(ChessBoard cb, int line, int column, int toLine, int toColumn) {
-        if (!PointChess.isValid(line,column)) {
+        if (!PointChess.isValid(line, column)) {
             System.err.println("Ферзь | Возникла ошибка, позиция фигуры вышла за границы 8х8");
             return false;
         }
 
         List<PointChess> maybePosQueen = new ArrayList<>();
 
-        // ПравоВверх
-        int x = line;
-        int y = column;
+        // Направления: {право, лево, вверх, вниз, право-вверх, право-вниз, лево-вверх, лево-вниз}
+        int[][] directions = {
+                { 0, 1},  // право
+                { 0, -1}, // лево
+                {-1, 0},  // вверх
+                { 1, 0},  // вниз
+                {-1, 1},  // право-вверх
+                { 1, 1},  // право-вниз
+                {-1, -1}, // лево-вверх
+                { 1, -1}  // лево-вниз
+        };
 
-        while (true) {
-            x -= 1;
-            y -= 1;
-            if (!(x >= 0 && x <= 7) || !(y >= 0 && y <= 7)){
-                break;
-            } else {
-                maybePosQueen.add(new PointChess(x,y));
+        // Проверка всех направлений
+        for (int[] dir : directions) {
+            int x = line;
+            int y = column;
+
+            while (true) {
+                x += dir[0];
+                y += dir[1];
+
+                // Выход за границы доски
+                if (!(x >= 0 && x <= 7) || !(y >= 0 && y <= 7)) {
+                    break;
+                }
+
+                if (cb.board[x][y] != null) {
+                    if (cb.board[x][y].color.equalsIgnoreCase(getColor())) {
+                        break;
+                    } else {
+                        maybePosQueen.add(new PointChess(x, y));  // Противник, добавляем позицию
+                        break;
+                    }
+                }
+                maybePosQueen.add(new PointChess(x, y));  // Пустая клетка, добавляем позицию
             }
         }
 
-        // ПравоНиз
-        int x2 = line;
-        int y2 = column;
-
-        while (true) {
-            x2 += 1;
-            y2 -= 1;
-            if (!(x2 >= 0 && x2 <= 7) || !(y2 >= 0 && y2 <= 7)){
-                break;
-            } else {
-                maybePosQueen.add(new PointChess(x2,y2));
-            }
-        }
-
-        // ЛевоВверх
-        int x3 = line;
-        int y3 = column;
-
-        while (true) {
-            x3 -= 1;
-            y3 += 1;
-            if (!(x3 >= 0 && x3 <= 7) || !(y3 >= 0 && y3 <= 7)){
-                break;
-            } else {
-                maybePosQueen.add(new PointChess(x3, y3));
-            }
-        }
-
-        // ЛевоНиз
-        int x4 = line;
-        int y4 = column;
-
-        while (true) {
-            x4 += 1;
-            y4 += 1;
-            if (!(x4 >= 0 && x4 <= 7) || !(y4 >= 0 && y4 <= 7)){
-                break;
-            } else {
-                maybePosQueen.add(new PointChess(x4, y4));
-            }
-        }
-        // Право
-        int x5 = line;
-        int y5 = column;
-
-        while(true){
-            y5 -= 1;
-            if (!(x5 >= 0 && x5 <= 7) || !(y5 >= 0 && y5 <= 7)){
-                break;
-            } else {
-                maybePosQueen.add(new PointChess(x5,y5));
-            }
-        }
-
-        // Лево
-        int x6 = line;
-        int y6 = column;
-
-        while(true){
-            y6 += 1;
-            if (!(x6 >= 0 && x6 <= 7) || !(y6 >= 0 && y6 <= 7)){
-                break;
-            } else {
-                maybePosQueen.add(new PointChess(x6,y6));
-            }
-        }
-
-        // Вверх
-        int x7 = line;
-        int y7 = column;
-
-        while(true){
-            x7 -= 1;
-            if (!(x7 >= 0 && x7 <= 7) || !(y7 >= 0 && y7 <= 7)){
-                break;
-            } else {
-                maybePosQueen.add(new PointChess(x7,y7));
-            }
-        }
-
-        // Вниз
-        int x8 = line;
-        int y8 = column;
-
-        while(true){
-            x8 += 1;
-            if (!(x8 >= 0 && x8 <= 7) || !(y8 >= 0 && y8 <= 7)){
-                break;
-            } else {
-                maybePosQueen.add(new PointChess(x8, y8));
-            }
-        }
-
-        for (PointChess item: maybePosQueen) {
-            if (item.equalsPoint(toLine,toColumn)) {
+        // Проверка на возможность перемещения в целевую позицию
+        for (PointChess item : maybePosQueen) {
+            if (item.equalsPoint(toLine, toColumn)) {
                 return true;
             }
         }
-        // для отладки
-//        for (PointChess item: maybePosQueen) {
-//            System.out.println(item.getX() + " " + item.getY());
-//        }
 
         return false;
     }
@@ -678,7 +801,21 @@ class King extends ChessPiece{
         super(color);
     }
 
-    boolean isUnderAttack(ChessBoard board, int line, int column){
+    public boolean isUnderAttack(ChessBoard board, int line, int column) {
+        // Проходим по всей доске
+        for (int i = 0; i < board.board.length; i++) { // строки
+            for (int j = 0; j < board.board[i].length; j++) { // столбцы
+                ChessPiece chess = board.board[i][j]; // Получаем фигуру на позиции (i, j)
+
+                // Проверяем, если фигура есть и она противника
+                if (chess != null && !chess.getColor().equalsIgnoreCase(this.getColor())) {
+                    // Проверяем, может ли эта фигура атаковать поле (line, column)
+                    if (chess.canMoveToPosition(board, i, j, line, column)) {
+                        return true;
+                    }
+                }
+            }
+        }
         return false;
     }
 
@@ -694,12 +831,12 @@ class King extends ChessPiece{
         List<PointChess> maybePosKing = new ArrayList<>();
 
         //Вверх
-        if (line - 1 <= 7 && line - 1  >= 0 ){
+        if (line + 1 <= 7 && line + 1  >= 0 ){
             maybePosKing.add(new PointChess(line - 1, column));
         }
 
         //Низ
-        if (line + 1 <= 7 && line + 1  >= 0 ){
+        if (line - 1 <= 7 && line - 1  >= 0 ){
             maybePosKing.add(new PointChess(line + 1, column));
         }
 
@@ -714,17 +851,17 @@ class King extends ChessPiece{
         }
 
         // ДиагональЛевоВверх
-        if ((line - 1 <= 7 && line - 1  >= 0 ) || (column - 1 <= 7 && column - 1 >= 0)){
+        if ((line + 1 <= 7 && line + 1  >= 0 ) || (column - 1 <= 7 && column - 1 >= 0)){
             maybePosKing.add(new PointChess(line - 1, column - 1));
         }
 
         // ДиагональПравоВверх
-        if ((line - 1 <= 7 && line - 1  >= 0 ) || (column + 1 <= 7 && column + 1 >= 0)){
+        if ((line + 1 <= 7 && line + 1  >= 0 ) || (column + 1 <= 7 && column + 1 >= 0)){
             maybePosKing.add(new PointChess(line - 1, column + 1));
         }
 
         // ДиагональПравоНиз
-        if ((line + 1 <= 7 && line + 1  >= 0 ) || (column + 1 <= 7 && column + 1 >= 0)){
+        if ((line - 1 <= 7 && line - 1  >= 0 ) || (column + 1 <= 7 && column + 1 >= 0)){
             maybePosKing.add(new PointChess(line + 1, column + 1));
         }
 
@@ -735,15 +872,15 @@ class King extends ChessPiece{
 
         for (PointChess item: maybePosKing) {
             if (item.equalsPoint(toLine,toColumn)) {
+                if (cb.board[toLine][toColumn] != null) {
+                    if (cb.board[toLine][toColumn].color.equalsIgnoreCase(getColor())) {
+                        return false;
+                    }
+                    return true;
+                }
                 return true;
             }
         }
-
-//        // для отладки
-//        for (PointChess item: maybePosKing) {
-//            System.out.println(item.getX() + " " + item.getY());
-//        }
-
         return false;
     }
 
@@ -796,21 +933,63 @@ public class Chess  {
         return board;
     }
 
-    public static void clearScreen() {
-        System.out.print("\033[H\033[2J");
-        System.out.flush();
-    }
-
     public static void main(String[] args) {
+
+
+        ChessBoard board = buildBoard();
+
+        Scanner scanner = new Scanner(System.in);
+        System.out.println("""
+               Чтобы проверить игру надо вводить команды:
+               'exit' - для выхода
+               'replay' - для перезапуска игры
+               'castling0' или 'castling7' - для рокировки по соответствующей линии
+               'move 1 1 2 3' - для передвижения фигуры с позиции 1 1 на 2 3(поле это двумерный массив от 0 до 7)
+               'print - печать доски'
+               Проверьте могут ли фигуры ходить друг сквозь друга, корректно ли съедают друг друга, можно ли поставить шах и сделать рокировку?""");
+        System.out.println();
+        board.printBoard();
         while (true) {
-            Scanner sc = new Scanner(System.in);
-            String string = sc.nextLine();
-            switch (string.toLowerCase()){
-                case "board":
+            String s = scanner.nextLine();
+            if (s.equals("exit")) break;
+            else if (s.equals("replay")) {
+                System.out.println("Заново");
+                board = buildBoard();
+                board.printBoard();
+            } else {
+                if (s.equals("castling0")) {
+                    if (board.castling0()) {
+                        System.out.println("Рокировка удалась");
+                        board.printBoard();
+                    } else {
+                        System.out.println("Рокировка не удалась");
+                    }
+                } else if (s.equals("castling7")) {
+                    if (board.castling7()) {
+                        System.out.println("Рокировка удалась");
+                        board.printBoard();
+                    } else {
+                        System.out.println("Рокировка не удалась");
+                    }
+                } else if (s.contains("move")) {
+                    String[] a = s.split(" ");
+                    try {
+                        int line = Integer.parseInt(a[1]);
+                        int column = Integer.parseInt(a[2]);
+                        int toLine = Integer.parseInt(a[3]);
+                        int toColumn = Integer.parseInt(a[4]);
+                        if (board.moveToPosition(line, column, toLine, toColumn)) {
+                            board.printBoard();
+                        }
+                    } catch (Exception e) {
+                        System.out.println("Вы что-то ввели не так, попробуйте ещё раз");
+                    }
+
+                } else if (s.equals("print")) {
+                    board.printBoard();
+                }
             }
-
         }
-
-
     }
 }
+
