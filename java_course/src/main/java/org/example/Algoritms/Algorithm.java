@@ -5,32 +5,33 @@ import java.util.*;
 public class Algorithm {
 
     public static void main(String[] args) {
-//        int [] arr = new int[] {4,1,10,55,33,66,99,7,15,21,39,45};
-//        quicksort(arr,0,arr.length - 1);
-//        StringBuilder str1 = new StringBuilder();
-//
-//        Iterator<Integer> integerIterator = Arrays.stream(arr).iterator();
-//        while (integerIterator.hasNext()){
-//            str1.append(" ").append(integerIterator.next());
-//        }
-//        System.out.println(str1);
-        List<Integer> integers = new ArrayList<>();
-        integers.add(4);
-        integers.add(17);
-        integers.add(1);
-        integers.add(9);
-        integers.add(91);
-        integers.add(35);
-        integers.add(71);
+        List<Integer> list = new ArrayList<>();
+        list.add(5);
+        list.add(1);
+        list.add(11);
+        list.add(26);
+        list.add(9);
+        list.add(3);
+        list.add(8);
 
-        quicksort1(integers,0,integers.size() - 1);
-        StringBuilder string = new StringBuilder();
-        Iterator<Integer> integerIterator = integers.iterator();
+        selectionSort(list);
 
-        while (integerIterator.hasNext()){
-            string.append(" ").append(integerIterator.next());
+        System.out.println(list);
+
+
+    }
+    public static void selectionSort(List<Integer> a) {
+        for (int i = 0; i < a.size() -1; i++) {
+            int indexMin = i;
+            for (int j = i + 1; j < a.size(); j++) {
+                if (a.get(j) < a.get(indexMin)){
+                    indexMin = j;
+                }
+            }
+            int tempNumber = a.get(i);
+            a.set(i,a.get(indexMin));
+            a.set(indexMin, tempNumber);
         }
-        System.out.println(string);
     }
 
     private static void quicksort1(List<Integer> integers, int low, int high) {
